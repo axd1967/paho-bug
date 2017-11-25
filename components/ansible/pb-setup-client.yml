@@ -1,0 +1,9 @@
+---
+- hosts: clients
+
+  become: yes
+
+  roles:
+
+  - client
+...

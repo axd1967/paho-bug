@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+
+    config.vm.box = "ubuntu/xenial64"
+
+    # minimal support in order to use Ansible
+    config.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y python python-pip python-apt python-virtualenv
+    SHELL
+
+    config.vm.synced_folder "../python/", "/home/ubuntu/python"
+
+    # NOTE: "srv-def", "server_vm", "MQ-server" and "servervm" are deliberate name variants to discover where exactly they are used
+
+    # "srv-def"     : VM name known by Vagrant
+    # "server_vm"   : hostname
+    # "MQ-server"   : name of VM in Virtualbox
+    # "servervm"
+
+    config.vm.define "srv-def", primary: true do |server_vm|
+
+        server_vm.vm.hostname = "servervm"
+
+        server_vm.vm.provider "virtualbox" do |vb|
+        #   # Display the VirtualBox GUI when booting the machine
+        #   vb.gui = true
+        #
+        #   # Customize the amount of memory on the VM:
+        #   vb.memory = "1024"
+            vb.name = "MQ-server"
+        end
+
+      # RabbitMQ console
+      server_vm.vm.network "forwarded_port", guest: 15672, host: 8001, host_ip: "127.0.0.1"
+
+      server_vm.vm.network "private_network", ip: "192.168.33.10"
+
+            server_vm.vm.provision "ansible" do |ansible|
+                ansible.inventory_path = "../ansible/inventories/vm.cfg"
+                ansible.playbook = "../ansible/python.yml"
+                ansible.playbook = "../ansible/pb-setup-server.yml"
+                ansible.verbose = true
+            end
+
+        server_vm.vm.synced_folder "../ansible/", "/home/ubuntu/ansible"
+
+    end # server_vm
+
+    config.vm.define "cli-def", primary: true do |client_vm|
+
+        client_vm.vm.hostname = "clientvm"
+
+        client_vm.vm.provider "virtualbox" do |vb|
+        #   # Display the VirtualBox GUI when booting the machine
+        #   vb.gui = true
+        #
+        #   # Customize the amount of memory on the VM:
+        #   vb.memory = "1024"
+            vb.name = "MQ-client"
+        end
+
+      client_vm.vm.network "private_network", ip: "192.168.33.11"
+
+            client_vm.vm.provision "ansible" do |ansible|
+                ansible.inventory_path = "../ansible/inventories/vm.cfg"
+                ansible.playbook = "../ansible/python.yml"
+                ansible.playbook = "../ansible/pb-setup-client.yml"
+                ansible.verbose = true
+            end
+
+    end # client vm
+
+end

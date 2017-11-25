@@ -1,0 +1,21 @@
+---
+
+# install client src -> synced folder
+# start venv
+
+#  - name: install reqs
+#    pip:
+#      chdir: "{{ client_path }}"
+#      requirements: "requirements.txt"
+#      virtualenv: "venv"
+#      virtualenv_command: ./setup_venv.sh
+
+
+  # FIXME smelly: why not use pip?
+
+  - name: start venv
+    shell: ./setup_venv.sh
+    args:
+      chdir: "{{ client_path }}"
+
+...
